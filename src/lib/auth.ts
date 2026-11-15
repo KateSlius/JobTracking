@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { db } from "@/lib/db";
 
 // Env vars read automatically by Auth.js:
@@ -34,6 +35,9 @@ export type CurrentUser = {
  * Reads cookies, so callers must render inside a <Suspense> boundary.
  */
 export async function requireUser(): Promise<CurrentUser> {
+  // Auth.js generates random values after reading the cookie, which Next rejects during
+  // partial prefetching. connection() keeps the session read strictly at request time.
+  await connection();
   const session = await auth();
   const user = session?.user;
   if (!user?.id || !user.email) redirect("/login");

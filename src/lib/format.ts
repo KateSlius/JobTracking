@@ -117,3 +117,14 @@ export function formatSalary(
   if (hasMax) return `Up to ${formatGBP(maxPence)} ${label}`;
   return null;
 }
+
+/** Today's date in London as a calendar date (00:00 UTC), for `date` columns like appliedOn. */
+export function londonToday(now: DateInput = new Date()): Date {
+  const [y, m, d] = format(toDate(now), "yyyy-MM-dd", { in: london }).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+/** Calendar date → "YYYY-MM-DD" string, e.g. for <input type="date"> or comparisons. */
+export function calendarDateToIso(value: DateInput): string {
+  return format(toDate(value), "yyyy-MM-dd", { in: utc });
+}

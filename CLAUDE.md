@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
-UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phase 0 (foundations) is done.
+UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phases 0 (foundations) and 1 (core CRUD) are done.
 
 ## Commands
 
@@ -15,22 +15,36 @@ npm run typecheck      # next typegen + tsc (PageProps/LayoutProps are generated
 npm run lint
 npm run format         # prettier, sorts Tailwind classes
 npm test               # vitest run
-npx vitest run src/lib/format.test.ts   # one file
+npx vitest run src/lib/salary.test.ts   # one file
 npx vitest run -t "BST"                 # tests matching a name
-npm run db:migrate     # prisma migrate dev (needs DATABASE_URL)
+npm run db:migrate     # prisma migrate dev; run `npm run db:generate` after (Prisma 7 no longer does it)
+npx prisma db seed     # demo@example.com with 12 applications; safe to re-run
 npm run db:studio
 ```
 
+### Local database
+
+No Docker here. Use Prisma's embedded Postgres: `npx prisma dev --detach --name uk-job-tracker`, then `npx prisma dev ls` for ports. Its quirks:
+
+- Every database name on a port is the same database, so `.env` needs `SHADOW_DATABASE_URL` pointing at the next port (the shadow server). Without it, `migrate dev` writes the shadow copy into your real data.
+- It can't handle several connections at once: set `DATABASE_POOL_MAX=1`, or queries fail with `bind message supplies N parameters`.
+
 ## Versions that differ from older docs
 
-- **Next.js 16** with `cacheComponents: true`. Middleware is now `src/proxy.ts`. Any component that reads `cookies()`, `searchParams` or the session must sit inside `<Suspense>`, or the build fails. Read `node_modules/next/dist/docs/` before using an unfamiliar API.
-- **Prisma 7**: the client is generated into `src/generated/prisma` (import from `@/generated/prisma/client`, never `@prisma/client`). It needs the `@prisma/adapter-pg` driver adapter (see `src/lib/db.ts`). The DB URL lives in `prisma.config.ts`, not in the schema.
+- **Next.js 16** with `cacheComponents: true` and partial prefetching. Middleware is now `src/proxy.ts`. Anything that reads `cookies()`, `searchParams`, `params`, the session, or client hooks like `usePathname()`/`useSearchParams()` must sit inside `<Suspense>`, or the build fails. Read `node_modules/next/dist/docs/` before using an unfamiliar API.
+- **Prisma 7**: the client is generated into `src/generated/prisma`. Import from `@/generated/prisma/client` on the server and `@/generated/prisma/enums` in client components (no runtime deps), never `@prisma/client`. It needs the `@prisma/adapter-pg` driver adapter (`src/lib/db.ts`). DB URLs and the seed command live in `prisma.config.ts`.
 - **Auth.js v5** (`next-auth@beta`) with database sessions via the Prisma adapter. Providers: Google, plus Resend magic links.
 - **shadcn/ui** uses the `base-nova` style on **Base UI** primitives, not Radix. Compose with `render={<Link />}`, not `asChild`. `cn` comes from the `cn` npm package (published by shadcn).
 
-## Architecture rules
+## Architecture
 
-- **Auth:** `src/proxy.ts` only checks that a session cookie exists, for a quick redirect. Real authorisation is `requireUser()` from `src/lib/auth.ts`, called in every page, query and Server Action that touches user data. Read the session inside a Suspense'd child component, not at the top of a layout.
-- **Dates and money:** use `src/lib/format.ts` only. Instants are `timestamptz`, shown in Europe/London. Calendar dates (e.g. closing date) are Postgres `date`, formatted in UTC. Money is integer pence. Vitest runs with `TZ=America/New_York` on purpose, so code that relies on the machine's time zone fails.
+Request flow for user data: page (Server Component inside `<Suspense>`) → `src/server/queries/*` (reads) or form → `src/server/actions/*` (Server Actions) → `src/server/services/*` (writes, transactions) → Prisma.
+
+- **Auth:** `src/proxy.ts` only checks that a session cookie exists, for a quick redirect. Real authorisation is `requireUser()` (`src/lib/auth.ts`). Every exported query and every Server Action calls it, and every Prisma query filters by `userId`. Services take `userId` as an argument and assume the caller checked. `requireUser()` calls `connection()` first, because Auth.js uses random values that Next rejects during partial prefetching.
+- **Status changes:** only `changeStatus()` in `src/server/services/status.ts` changes `Application.status`. It writes a `StatusChange` row in the same transaction and fills `appliedOn` when an application moves past Saved. The edit form deliberately has no status field. The timeline, and later the funnel and response rate, read `StatusChange`.
+- **Validation:** `src/lib/validation/application.ts` is the single zod schema for the form and the actions. It turns form strings into typed data: DD/MM/YYYY dates, `£45k`/`£500/day` salaries into pence plus a period, IR35 cleared unless the role is a contract, city cleared for remote roles. The form (`application-form.tsx`) only hides and shows fields. The server decides what is valid.
+- **List state lives in the URL:** `src/lib/validation/filters.ts` parses and serialises `q`, `status`, `source`, `location`, `sort`, `dir` and `page`. Both the server query and the client `FiltersBar` use it.
+- **Dates and money:** use `src/lib/format.ts` only. Instants are `timestamptz`, shown in Europe/London. Calendar dates (`closingDate`, `appliedOn`) are Postgres `date`, formatted in UTC; use `londonToday()` for "today". Money is integer pence. Vitest runs with `TZ=America/New_York` on purpose, so code that relies on the machine's time zone fails.
+- **Companies, contacts and CV versions** are created on the fly from form text: companies are matched case-insensitively per user, and CV/cover letter labels are upserted.
 - **New signed-in routes** go under `src/app/(app)/` and must also be added to the matcher in `src/proxy.ts`.
 - Use UK English in all UI text.

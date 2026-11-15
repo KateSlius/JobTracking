@@ -6,6 +6,7 @@ import {
   formatGBP,
   formatSalary,
   formatTime,
+  londonToday,
   londonWallTimeToUtc,
   parseUkDate,
   startOfLondonMonth,
@@ -111,6 +112,16 @@ describe("week and month boundaries", () => {
     expect(startOfLondonMonth("2026-11-15T12:00:00Z").toISOString()).toBe(
       "2026-11-01T00:00:00.000Z",
     );
+  });
+});
+
+describe("londonToday", () => {
+  it("uses the London date just after midnight in BST", () => {
+    // 23:30 UTC on 30 June = 00:30 BST on 1 July
+    expect(londonToday("2026-06-30T23:30:00Z").toISOString()).toBe("2026-07-01T00:00:00.000Z");
+  });
+  it("matches UTC in winter", () => {
+    expect(londonToday("2026-11-15T23:30:00Z").toISOString()).toBe("2026-11-15T00:00:00.000Z");
   });
 });
 

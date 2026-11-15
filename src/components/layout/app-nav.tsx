@@ -14,8 +14,13 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
+/** Highlights the current section. Must sit inside <Suspense> (usePathname on dynamic routes). */
 export function AppNav() {
-  const pathname = usePathname();
+  return <NavLinks pathname={usePathname()} />;
+}
+
+/** Same links with no highlight, for the Suspense fallback while the path streams in. */
+export function NavLinks({ pathname = "" }: { pathname?: string }) {
   return (
     <nav aria-label="Main" className="flex gap-1 md:flex-col">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {

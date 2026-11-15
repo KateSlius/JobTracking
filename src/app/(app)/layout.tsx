@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser, signOut } from "@/lib/auth";
-import { AppNav } from "@/components/layout/app-nav";
+import { AppNav, NavLinks } from "@/components/layout/app-nav";
 import { UserMenu } from "@/components/layout/user-menu";
 
 async function signOutAction() {
@@ -23,7 +23,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <Link href="/dashboard" className="px-3 font-semibold">
           Job Tracker
         </Link>
-        <AppNav />
+        <Suspense fallback={<NavLinks />}>
+          <AppNav />
+        </Suspense>
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center justify-end border-b px-4">

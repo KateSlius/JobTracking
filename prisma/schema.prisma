@@ -1,4 +1,9 @@
-// Phase 0: auth tables only. Application, Interview, Reminder etc. arrive in Phase 1 (see ../../PLAN.md, outside this repo).
+// Data model for the UK job tracker. See ../../PLAN.md (outside this repo) for the full spec.
+//
+// Conventions:
+// - Instants are timestamptz (stored UTC, shown in Europe/London).
+// - Calendar dates with no time (closing date, applied date) are Postgres `date`.
+// - Money is integer pence.
 
 generator client {
   provider = "prisma-client"
@@ -20,8 +25,14 @@ model User {
   createdAt             DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
 
-  accounts Account[]
-  sessions Session[]
+  accounts         Account[]
+  sessions         Session[]
+  companies        Company[]
+  contacts         Contact[]
+  applications     Application[]
+  reminders        Reminder[]
+  documentVersions DocumentVersion[]
+  notifications    Notification[]
 }
 
 // Auth.js adapter models: https://authjs.dev/getting-started/adapters/prisma
@@ -61,4 +72,247 @@ model VerificationToken {
   expires    DateTime @db.Timestamptz(3)
 
   @@id([identifier, token])
+}
+
+// ─── Job tracking ────────────────────────────────────────────────────────────
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum JobSource {
+  LINKEDIN
+  INDEED_UK
+  REED
+  TOTALJOBS
+  CIVIL_SERVICE_JOBS
+  AGENCY
+  REFERRAL
+  COMPANY_SITE
+  OTHER
+}
+
+enum LocationType {
+  ONSITE
+  HYBRID
+  REMOTE
+}
+
+enum SalaryPeriod {
+  ANNUM
+  DAY
+}
+
+enum ContractType {
+  PERMANENT
+  FIXED_TERM
+  CONTRACT
+}
+
+enum Ir35Status {
+  INSIDE
+  OUTSIDE
+  UNDETERMINED
+}
+
+enum ContactRole {
+  RECRUITER
+  HIRING_MANAGER
+  REFERRER
+  OTHER
+}
+
+enum DocumentKind {
+  CV
+  COVER_LETTER
+}
+
+enum InterviewType {
+  PHONE
+  VIDEO
+  IN_PERSON
+  ASSESSMENT_CENTRE
+}
+
+enum ReminderKind {
+  FOLLOW_UP
+  CLOSING_DATE
+  INTERVIEW_PREP
+  CUSTOM
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  website   String?
+  notes     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts     Contact[]
+  applications Application[]
+
+  @@unique([userId, name])
+}
+
+model Contact {
+  id          String      @id @default(cuid())
+  userId      String
+  companyId   String?
+  name        String
+  role        ContactRole @default(RECRUITER)
+  email       String?
+  phone       String?
+  linkedinUrl String?
+  agencyName  String?
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  applications Application[]
+
+  @@index([userId])
+}
+
+model Application {
+  id                      String            @id @default(cuid())
+  userId                  String
+  companyId               String
+  contactId               String?
+  roleTitle               String
+  status                  ApplicationStatus @default(SAVED)
+  jobUrl                  String?
+  source                  JobSource?
+  sourceOther             String?
+  locationType            LocationType?
+  city                    String?
+  salaryMinPence          Int?
+  salaryMaxPence          Int?
+  salaryPeriod            SalaryPeriod      @default(ANNUM)
+  contractType            ContractType?
+  ir35Status              Ir35Status?
+  visaSponsorshipRequired Boolean           @default(false)
+  closingDate             DateTime?         @db.Date
+  appliedOn               DateTime?         @db.Date
+  cvVersionId             String?
+  coverLetterVersionId    String?
+  notes                   String?
+  archivedAt              DateTime?         @db.Timestamptz(3)
+  createdAt               DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime          @updatedAt @db.Timestamptz(3)
+
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: NoAction)
+  contact            Contact?         @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  cvVersion          DocumentVersion? @relation("CvVersion", fields: [cvVersionId], references: [id], onDelete: SetNull)
+  coverLetterVersion DocumentVersion? @relation("CoverLetterVersion", fields: [coverLetterVersionId], references: [id], onDelete: SetNull)
+  statusChanges      StatusChange[]
+  interviews         Interview[]
+  reminders          Reminder[]
+
+  @@index([userId, status])
+  @@index([userId, closingDate])
+  @@index([userId, updatedAt])
+}
+
+/// Append-only. Written only by src/server/services/status.ts.
+model StatusChange {
+  id            String             @id @default(cuid())
+  applicationId String
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedAt     DateTime           @default(now()) @db.Timestamptz(3)
+  note          String?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, changedAt])
+}
+
+model DocumentVersion {
+  id        String       @id @default(cuid())
+  userId    String
+  kind      DocumentKind
+  label     String
+  fileUrl   String?
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cvApplications          Application[] @relation("CvVersion")
+  coverLetterApplications Application[] @relation("CoverLetterVersion")
+
+  @@unique([userId, kind, label])
+}
+
+// Interviews, reminders and notifications get their UI in Phases 3–4.
+
+model Interview {
+  id            String        @id @default(cuid())
+  applicationId String
+  type          InterviewType
+  stage         String?
+  startsAt      DateTime      @db.Timestamptz(3)
+  endsAt        DateTime      @db.Timestamptz(3)
+  location      String?
+  meetingUrl    String?
+  interviewers  String?
+  prepNotes     String?
+  outcome       String?
+  /// Stable iCalendar UID so re-downloading an .ics updates the event instead of duplicating it.
+  icsUid        String        @unique @default(uuid())
+  icsSequence   Int           @default(0)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reminders   Reminder[]
+
+  @@index([applicationId])
+  @@index([startsAt])
+}
+
+model Reminder {
+  id            String       @id @default(cuid())
+  userId        String
+  applicationId String?
+  interviewId   String?
+  kind          ReminderKind
+  title         String
+  dueAt         DateTime     @db.Timestamptz(3)
+  completedAt   DateTime?    @db.Timestamptz(3)
+  dismissedAt   DateTime?    @db.Timestamptz(3)
+  /// Set when the email is sent; the cron job skips rows where this is not null.
+  emailedAt     DateTime?    @db.Timestamptz(3)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interview     Interview?     @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([userId, dueAt])
+  @@index([dueAt, emailedAt])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  reminderId String?
+  message    String
+  readAt     DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminder Reminder? @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
 }
