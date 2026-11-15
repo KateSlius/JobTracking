@@ -70,6 +70,8 @@
   /* Chart colours, validated with the dataviz palette checker against --card. */
   --viz-accent: #2a78d6;
   --viz-track: #cde2fb;
+  /* Closing-date events: white text on this passes 4.5:1. */
+  --cal-deadline: #b45309;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -107,6 +109,7 @@
   --ring: oklch(0.556 0 0);
   --viz-accent: #3987e5;
   --viz-track: #0d366b;
+  --cal-deadline: #b45309;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -132,4 +135,32 @@
   html {
     @apply font-sans;
   }
+}
+
+/* FullCalendar (classic theme) mapped onto the app's tokens, so it follows light/dark. */
+.jt-calendar {
+  /* The theme uses one text colour for every button, so the active ("strong") state must stay
+     light enough for dark text to read. */
+  --fc-classic-button: var(--background);
+  --fc-classic-button-border: var(--border);
+  --fc-classic-button-strong: var(--muted);
+  --fc-classic-button-strong-border: var(--input);
+  --fc-classic-button-outline: var(--ring);
+  --fc-classic-button-foreground: var(--foreground);
+  --fc-classic-primary: var(--viz-accent);
+  --fc-classic-primary-foreground: #fff;
+  --fc-classic-event: var(--viz-accent);
+  --fc-classic-event-contrast: #fff;
+  --fc-classic-highlight: color-mix(in oklab, var(--viz-accent) 12%, transparent);
+  --fc-classic-today: color-mix(in oklab, var(--viz-accent) 8%, transparent);
+  --fc-classic-now: var(--destructive);
+  --fc-classic-background: var(--card);
+  --fc-classic-faint: color-mix(in oklab, var(--foreground) 4%, transparent);
+  --fc-classic-muted: var(--muted);
+  --fc-classic-strong: color-mix(in oklab, var(--foreground) 14%, transparent);
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-faint-foreground: var(--muted-foreground);
+  --fc-classic-muted-foreground: var(--muted-foreground);
+  --fc-classic-border: var(--border);
+  --fc-classic-strong-border: var(--input);
 }

@@ -37,7 +37,14 @@ type SeedApp = {
   contact?: { name: string; email?: string; phone?: string; agencyName?: string };
   cv?: string;
   /** An interview N days from today at a London wall-clock hour. */
-  interview?: { inDays: number; hour: number; type: InterviewType; stage: string };
+  interview?: {
+    inDays: number;
+    hour: number;
+    type: InterviewType;
+    stage: string;
+    location?: string;
+    outcome?: string;
+  };
   /** A follow-up reminder that fell due N days ago and is still open. */
   overdueReminder?: { title: string; dueDaysAgo: number };
 };
@@ -175,6 +182,14 @@ const APPS: SeedApp[] = [
       salaryMinPence: 5_800_000,
       salaryMaxPence: 6_800_000,
       contractType: "PERMANENT",
+    },
+    interview: {
+      inDays: -5,
+      hour: 14,
+      type: "IN_PERSON",
+      stage: "Panel interview",
+      location: "BBC Bridge House, MediaCityUK, Salford M50 2BH",
+      outcome: "Went well – asked about accessibility work. Expect to hear within a week.",
     },
   },
   {
@@ -315,6 +330,8 @@ async function main() {
           applicationId: created.id,
           type: seed.interview.type,
           stage: seed.interview.stage,
+          location: seed.interview.location,
+          outcome: seed.interview.outcome,
           startsAt,
           endsAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
         },

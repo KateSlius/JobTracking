@@ -7,8 +7,16 @@ import {
   LocationType,
   SalaryPeriod,
 } from "@/generated/prisma/enums";
-import { parseUkDate } from "@/lib/format";
 import { parseSalary } from "@/lib/salary";
+import {
+  fieldErrors,
+  optionalEmail,
+  optionalEnum,
+  optionalText,
+  text,
+  ukDate,
+  webUrl,
+} from "./shared";
 
 /** Field names used by the application form. Keep in sync with application-form.tsx. */
 export const APPLICATION_FIELDS = [
@@ -40,24 +48,6 @@ export const APPLICATION_FIELDS = [
 export type ApplicationField = (typeof APPLICATION_FIELDS)[number];
 export type ApplicationFormValues = Partial<Record<ApplicationField, string>>;
 
-const text = (max: number) => z.string().trim().max(max, `Keep this under ${max} characters.`);
-const optionalText = (max: number) => text(max).transform((v) => (v === "" ? null : v));
-const optionalEnum = <T extends Record<string, string>>(e: T) =>
-  z.union([z.literal(""), z.enum(e)]).transform((v) => (v === "" ? null : (v as T[keyof T])));
-
-const ukDate = z
-  .string()
-  .trim()
-  .transform((v, ctx) => {
-    if (v === "") return null;
-    const date = parseUkDate(v);
-    if (!date) {
-      ctx.addIssue({ code: "custom", message: "Enter a date as DD/MM/YYYY, e.g. 31/03/2026." });
-      return z.NEVER;
-    }
-    return date;
-  });
-
 const salary = z
   .string()
   .trim()
@@ -70,40 +60,12 @@ const salary = z
     return parsed;
   });
 
-const jobUrl = z
-  .string()
-  .trim()
-  .transform((v, ctx) => {
-    if (v === "") return null;
-    const withProtocol = /^https?:\/\//i.test(v) ? v : `https://${v}`;
-    try {
-      const url = new URL(withProtocol);
-      if (!url.hostname.includes(".")) throw new Error("no TLD");
-      return url.toString();
-    } catch {
-      ctx.addIssue({ code: "custom", message: "Enter a valid web address." });
-      return z.NEVER;
-    }
-  });
-
-const email = z
-  .string()
-  .trim()
-  .transform((v, ctx) => {
-    if (v === "") return null;
-    if (!z.email().safeParse(v).success) {
-      ctx.addIssue({ code: "custom", message: "Enter a valid email address." });
-      return z.NEVER;
-    }
-    return v.toLowerCase();
-  });
-
 export const applicationSchema = z
   .object({
     companyName: text(200).min(1, "Enter the company name."),
     roleTitle: text(200).min(1, "Enter the job title."),
     status: z.enum(ApplicationStatus).default("SAVED"),
-    jobUrl,
+    jobUrl: webUrl,
     source: optionalEnum(JobSource),
     sourceOther: optionalText(100),
     locationType: optionalEnum(LocationType),
@@ -120,7 +82,7 @@ export const applicationSchema = z
     closingDate: ukDate,
     appliedOn: ukDate,
     contactName: optionalText(200),
-    contactEmail: email,
+    contactEmail: optionalEmail,
     contactPhone: optionalText(50),
     agencyName: optionalText(200),
     cvVersion: optionalText(100),
@@ -216,10 +178,5 @@ export function parseApplicationValues(values: ApplicationFormValues): ParseResu
   const result = applicationSchema.safeParse(input);
   if (result.success) return { ok: true, data: result.data };
 
-  const errors: Partial<Record<ApplicationField, string>> = {};
-  for (const issue of result.error.issues) {
-    const field = issue.path[0] as ApplicationField | undefined;
-    if (field && !errors[field]) errors[field] = issue.message;
-  }
-  return { ok: false, errors };
+  return { ok: false, errors: fieldErrors<ApplicationField>(result.error) };
 }

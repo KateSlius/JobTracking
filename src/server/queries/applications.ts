@@ -104,7 +104,7 @@ export type ApplicationListRow = Awaited<ReturnType<typeof listApplications>>["r
 
 export async function getApplication(id: string) {
   const user = await requireUser();
-  return db.application.findFirst({
+  const app = await db.application.findFirst({
     where: { id, userId: user.id },
     include: {
       company: { select: { name: true } },
@@ -112,8 +112,15 @@ export async function getApplication(id: string) {
       cvVersion: { select: { label: true } },
       coverLetterVersion: { select: { label: true } },
       statusChanges: { orderBy: { changedAt: "desc" } },
+      interviews: { orderBy: { startsAt: "asc" } },
     },
   });
+  if (!app) return null;
+  const now = Date.now();
+  return {
+    ...app,
+    interviews: app.interviews.map((i) => ({ ...i, isPast: i.endsAt.getTime() < now })),
+  };
 }
 
 export type ApplicationDetail = NonNullable<Awaited<ReturnType<typeof getApplication>>>;

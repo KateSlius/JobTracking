@@ -6,6 +6,9 @@ import {
   formatGBP,
   formatSalary,
   formatTime,
+  toLondonWallIso,
+  formatClockTime,
+  parseClockTime,
   formatCalendarDayMonth,
   formatEventTime,
   londonToday,
@@ -123,6 +126,44 @@ describe("short formats", () => {
   });
   it("formats an event in London time", () => {
     expect(formatEventTime("2026-07-06T13:30:00Z")).toBe("Mon 6 Jul, 14:30");
+  });
+});
+
+describe("toLondonWallIso", () => {
+  it("drops the offset and keeps London wall time", () => {
+    expect(toLondonWallIso("2026-07-01T09:00:00Z")).toBe("2026-07-01T10:00:00");
+    expect(toLondonWallIso("2026-11-18T10:00:00Z")).toBe("2026-11-18T10:00:00");
+  });
+});
+
+describe("parseClockTime", () => {
+  it.each([
+    ["14:30", 14, 30],
+    ["14.30", 14, 30],
+    ["1430", 14, 30],
+    ["930", 9, 30],
+    ["9:05", 9, 5],
+    ["09:00", 9, 0],
+    ["9", 9, 0],
+    ["9am", 9, 0],
+    ["9 AM", 9, 0],
+    ["2:30pm", 14, 30],
+    ["12pm", 12, 0],
+    ["12am", 0, 0],
+    ["0:15", 0, 15],
+  ])("parses %s", (input, hours, minutes) => {
+    expect(parseClockTime(input)).toEqual({ hours, minutes });
+  });
+
+  it.each(["", "24:00", "9:60", "13pm", "0am", "noon", "930am x", "12345"])(
+    "rejects %s",
+    (input) => {
+      expect(parseClockTime(input)).toBeNull();
+    },
+  );
+
+  it("formats back to HH:mm", () => {
+    expect(formatClockTime({ hours: 9, minutes: 5 })).toBe("09:05");
   });
 });
 

@@ -138,3 +138,39 @@ export function formatCalendarDayMonth(value: DateInput): string {
 export function formatEventTime(value: DateInput): string {
   return format(toDate(value), "EEE d MMM, HH:mm", { in: london });
 }
+
+/**
+ * What people type into a time box → { hours, minutes } on a 24-hour clock, or null.
+ * Accepts "14:30", "14.30", "1430", "930", "9:00", "9am", "2:30pm", "12pm" (noon), "12am" (midnight).
+ */
+export function parseClockTime(input: string): { hours: number; minutes: number } | null {
+  const text = input.trim().toLowerCase().replace(/\s+/g, "");
+  const match = /^(\d{1,2})(?:[:.]?(\d{2}))?(am|pm)?$/.exec(text);
+  if (!match) return null;
+  let hours = Number(match[1]);
+  const minutes = match[2] ? Number(match[2]) : 0;
+  const meridiem = match[3];
+  if (minutes > 59) return null;
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    if (meridiem === "am") hours = hours === 12 ? 0 : hours;
+    else hours = hours === 12 ? 12 : hours + 12;
+  } else if (hours > 23) {
+    return null;
+  }
+  return { hours, minutes };
+}
+
+/** { hours, minutes } → "09:30". */
+export function formatClockTime({ hours, minutes }: { hours: number; minutes: number }): string {
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+/**
+ * Instant → London wall-clock ISO string with no offset, e.g. "2026-11-18T10:00:00".
+ * For the calendar, which runs in UTC mode so these "floating" times display exactly as London
+ * time whatever the viewer's computer is set to.
+ */
+export function toLondonWallIso(value: DateInput): string {
+  return format(toDate(value), "yyyy-MM-dd'T'HH:mm:ss", { in: london });
+}

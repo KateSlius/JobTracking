@@ -9,6 +9,7 @@ import { DeleteApplicationButton } from "@/components/applications/delete-applic
 import { StatusBadge } from "@/components/applications/status-badge";
 import { StatusChanger } from "@/components/applications/status-changer";
 import { StatusTimeline } from "@/components/applications/status-timeline";
+import { InterviewsSection } from "@/components/interviews/interviews-section";
 import {
   CONTRACT_TYPE_LABEL,
   IR35_LABEL,
@@ -17,6 +18,11 @@ import {
 } from "@/lib/constants";
 import { formatCalendarDate, formatSalary } from "@/lib/format";
 import { changeStatusAction, deleteApplicationAction } from "@/server/actions/applications";
+import {
+  createInterviewAction,
+  deleteInterviewAction,
+  updateInterviewAction,
+} from "@/server/actions/interviews";
 import { getApplication, type ApplicationDetail } from "@/server/queries/applications";
 
 export const metadata: Metadata = { title: "Application" };
@@ -111,6 +117,26 @@ async function ApplicationView({ params }: { params: PageProps<"/applications/[i
                     .join(" · ") || null}
                 </Detail>
               </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Interviews</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InterviewsSection
+                application={{
+                  id: app.id,
+                  roleTitle: app.roleTitle,
+                  companyName: app.company.name,
+                }}
+                interviews={app.interviews}
+                appUrl={process.env.APP_URL ?? null}
+                createAction={createInterviewAction.bind(null, app.id)}
+                updateAction={updateInterviewAction}
+                deleteAction={deleteInterviewAction}
+              />
             </CardContent>
           </Card>
 

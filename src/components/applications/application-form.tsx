@@ -17,6 +17,7 @@ import {
   STATUS_ORDER,
   UK_CITIES,
 } from "@/lib/constants";
+import { useSubmitWithoutReset } from "@/lib/use-submit-without-reset";
 import type { ApplicationField, ApplicationFormValues } from "@/lib/validation/application";
 import type { ApplicationFormState } from "@/server/actions/applications";
 import type { FormSuggestions } from "@/server/queries/applications";
@@ -37,6 +38,7 @@ export function ApplicationForm({
   cancelHref,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, {});
+  const onSubmit = useSubmitWithoutReset(formAction);
   // After a failed submit, show what the person typed, not the original values.
   const values = state.values ?? initialValues;
   const errors = state.errors ?? {};
@@ -58,7 +60,12 @@ export function ApplicationForm({
   });
 
   return (
-    <form action={formAction} className="flex max-w-3xl flex-col gap-8" noValidate>
+    <form
+      action={formAction}
+      onSubmit={onSubmit}
+      className="flex max-w-3xl flex-col gap-8"
+      noValidate
+    >
       {state.message && (
         <p role="alert" className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
           {state.message}
