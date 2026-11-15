@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
-UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phases 0–4 are done: foundations, core CRUD, Kanban board and dashboard, interviews and calendar, reminders and email.
+UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. All phases (0–5) in PLAN.md are done. The README has the launch checklist.
 
 ## Commands
 
@@ -14,7 +14,9 @@ npm run build          # prisma generate + next build
 npm run typecheck      # next typegen + tsc (PageProps/LayoutProps are generated types)
 npm run lint
 npm run format         # prettier, sorts Tailwind classes
-npm test               # vitest run
+npm test               # vitest run (unit)
+npm run test:e2e       # Playwright e2e + axe accessibility; builds and serves on :3100, local DB only
+npx playwright test tests/e2e/reminders.spec.ts   # one e2e file
 npx vitest run src/lib/salary.test.ts   # one file
 npx vitest run -t "BST"                 # tests matching a name
 npm run db:migrate     # prisma migrate dev; run `npm run db:generate` after (Prisma 7 no longer does it)
@@ -53,11 +55,15 @@ Request flow for user data: page (Server Component inside `<Suspense>`) → `src
 - **Charts** follow the dataviz skill: one validated accent hue, `--viz-accent`/`--viz-track` in `globals.css` (light and dark), bars ≤24px, a hover tooltip plus a "View as table" fallback. The funnel is an HTML meter list, not a chart library funnel.
 - **Dates and money:** use `src/lib/format.ts` only. Instants are `timestamptz`, shown in Europe/London. Calendar dates (`closingDate`, `appliedOn`) are Postgres `date`, formatted in UTC; use `londonToday()` for "today". Money is integer pence. Vitest runs with `TZ=America/New_York` on purpose, so code that relies on the machine's time zone fails.
 - **Companies, contacts and CV versions** are created on the fly from form text: companies are matched case-insensitively per user, and CV/cover letter labels are upserted.
-- **New signed-in routes** go under `src/app/(app)/`, must be added to the matcher in `src/proxy.ts`, and get a sidebar entry in `app-nav.tsx` only once the page exists (Next prefetches nav links, so a missing page logs 404s).
+- **New signed-in routes** go under `src/app/(app)/`, must be added to the matcher in `src/proxy.ts`, and get a sidebar entry in `app-nav.tsx` only once the page exists (Next prefetches nav links, so a missing page logs 404s). The phone top bar fits four nav icons at 375px; put anything else in the account menu.
 - **Reminders:** automatic ones (closing date, follow-up, interview prep, all at 09:00 London) are planned by the pure `planAutoReminders()` (`src/lib/reminders/plan.ts`) and written by `syncAutoReminders()` (`sync.ts`). Call sync inside the transaction of **every** write that changes an application's status, dates or interviews; the application, status and interview services already do. Sync compares against `plannedAt` (not `dueAt`), so snoozes survive, and it never recreates a reminder that was done or dismissed for the same plan. Custom reminders (`kind: CUSTOM`) are never touched by sync.
 - **Reminders cron** (`/api/cron/reminders`, `src/server/services/reminder-job.ts`, scheduled in `vercel.json` daily at 09:00 UTC, the Hobby plan limit): 1) re-sync reminders about to fire, 2) claim due reminders and create notifications in one transaction (`UPDATE … RETURNING … FOR UPDATE SKIP LOCKED`), 3) claim reminders to email (due in the last 48 h, user opted in), 4) send one digest per user and release the claim if sending fails. Safe to run concurrently. It requires `CRON_SECRET` and refuses to run without it.
 - **Email** goes through `sendEmail()` (`src/server/email/send.ts`): Resend when `AUTH_RESEND_KEY` is set; otherwise, in development, JSON + HTML files in `.outbox/`; in production without a key it fails loudly. Templates are pure functions in `src/lib/email/`, with every value HTML-escaped.
 - **Base UI menus:** `DropdownMenuLabel` must be inside a `DropdownMenuGroup`, or the menu crashes on open (Base UI error #31). Put actions in menu items, not buttons inside labels.
+- **UK GDPR:** `/api/export` (`buildExportZip` in `src/server/services/account.ts`) zips CSVs, `data.json` and a README; it deliberately leaves out sign-in tokens and sessions. CSV text cells starting with `= + - @` get a leading apostrophe (formula-injection guard, `src/lib/export/csv.ts`). Account deletion is a single `DELETE` on `User` that cascades (Application→Company is `NoAction` so the cascade completes), then a best-effort confirmation email and clearing the cookie. **Any new user-owned model needs `onDelete: Cascade` from `User`** and a place in the export.
+- **Legal pages** (`/privacy`, `/terms`) are drafts: `<Fill>` marks the operator details still to complete.
+- **E2E tests** (`tests/e2e/`): `support.ts` provides `signIn` (creates a session row) and a `db` client, and refuses non-local databases. Seed dates are relative to now, so assert with `londonDay()`/`londonDate()` or date-independent figures. Wait for hydration before interacting with client widgets: the Kanban tests wait for dnd-kit's `DndLiveRegion` and for each announcement.
+- **Accessibility:** axe (WCAG 2.2 AA, serious and critical) runs on every page in `accessibility.spec.ts`. `--muted-foreground` and `--destructive` are darker than shadcn's defaults so they pass 4.5:1 on `--muted` and on their own tints; don't revert them. Accessible names must contain the visible text (e.g. "Account menu: DU").
 - **`APP_URL`** (no trailing slash) is the public address used in calendar invites, and in emails from Phase 4.
 - **Render purity:** lint forbids `Date.now()`/`new Date()` in components. Read the clock in queries, after `requireUser()` (which calls `connection()`); reading it earlier, even as a default argument, fails the build.
 - **Layout gotchas:** wide content needs `min-w-0` on its flex parent, and a horizontal scroll container needs `relative`, or absolutely positioned children (e.g. `sr-only` labels) escape it and widen the page.

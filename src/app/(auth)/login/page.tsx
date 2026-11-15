@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { signIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,17 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
               Continue with Google
             </Button>
           </form>
+          <p className="text-muted-foreground text-center text-xs">
+            By continuing you agree to the{" "}
+            <Link href="/terms" className="underline underline-offset-4">
+              terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-4">
+              privacy policy
+            </Link>
+            .
+          </p>
         </CardContent>
       </Card>
     </main>

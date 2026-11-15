@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Briefcase, CalendarDays, LayoutDashboard } from "lucide-react";
+import { AlarmClock, Briefcase, CalendarDays, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Only routes that exist: Next prefetches every link, so a missing page shows up as a 404.
-// Add Settings (Phase 5) when it's built.
+// Settings lives in the account menu, so the phone top bar fits at 375px.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/applications", label: "Applications", icon: Briefcase },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/reminders", label: "Reminders", icon: Bell },
+  { href: "/reminders", label: "Reminders", icon: AlarmClock }, // not a bell: the header bell is notifications
 ] as const;
 
 /** Highlights the current section. Must sit inside <Suspense> (usePathname on dynamic routes). */

@@ -64,7 +64,8 @@ export default function CalendarView({ items }: { items: CalendarItem[] }) {
           narrow ? { start: "today", end: "dayGridMonth,timeGridWeek,listMonth" } : false
         }
         buttons={{
-          today: { text: "Today" },
+          // The hint becomes the accessible name; it must contain the visible text.
+          today: { text: "Today", hint: "Today" },
           dayGridMonth: { text: "Month" },
           timeGridWeek: { text: "Week" },
           listMonth: { text: "List" },

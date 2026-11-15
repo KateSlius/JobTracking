@@ -45,3 +45,7 @@ next-env.d.ts
 
 # local email outbox (development)
 /.outbox
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

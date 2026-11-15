@@ -7,6 +7,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   prettier,
+  {
+    // Playwright fixtures call `use()`, which the React hooks rule mistakes for React's hook.
+    files: ["tests/e2e/**/*.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off", "no-empty-pattern": "off" },
+  },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "src/generated/**"]),
 ]);
 

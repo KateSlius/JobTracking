@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { LogOut, Settings, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,9 +33,11 @@ export function UserMenu({
 }) {
   return (
     <DropdownMenu>
+      {/* The accessible name includes the visible initials (WCAG 2.5.3 Label in Name), so
+          "click DU" works with voice control. */}
       <DropdownMenuTrigger
         className="focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2"
-        aria-label="Account menu"
+        aria-label={`Account menu: ${initials(user)}`}
       >
         <Avatar>
           {user.image && <AvatarImage src={user.image} alt="" />}
@@ -49,7 +53,16 @@ export function UserMenu({
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void signOutAction()}>Sign out</DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/settings" />}>
+          <Settings /> Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/settings/privacy" />}>
+          <ShieldCheck /> Privacy and data
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => void signOutAction()}>
+          <LogOut /> Sign out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
