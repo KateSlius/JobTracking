@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
-UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phases 0 (foundations) and 1 (core CRUD) are done.
+UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phases 0 (foundations), 1 (core CRUD) and 2 (Kanban board and dashboard) are done.
 
 ## Commands
 
@@ -18,7 +18,7 @@ npm test               # vitest run
 npx vitest run src/lib/salary.test.ts   # one file
 npx vitest run -t "BST"                 # tests matching a name
 npm run db:migrate     # prisma migrate dev; run `npm run db:generate` after (Prisma 7 no longer does it)
-npx prisma db seed     # demo@example.com with 12 applications; safe to re-run
+npx prisma db seed     # demo@example.com: 12 applications, 1 upcoming interview, 1 overdue reminder; safe to re-run
 npm run db:studio
 ```
 
@@ -43,8 +43,12 @@ Request flow for user data: page (Server Component inside `<Suspense>`) → `src
 - **Auth:** `src/proxy.ts` only checks that a session cookie exists, for a quick redirect. Real authorisation is `requireUser()` (`src/lib/auth.ts`). Every exported query and every Server Action calls it, and every Prisma query filters by `userId`. Services take `userId` as an argument and assume the caller checked. `requireUser()` calls `connection()` first, because Auth.js uses random values that Next rejects during partial prefetching.
 - **Status changes:** only `changeStatus()` in `src/server/services/status.ts` changes `Application.status`. It writes a `StatusChange` row in the same transaction and fills `appliedOn` when an application moves past Saved. The edit form deliberately has no status field. The timeline, and later the funnel and response rate, read `StatusChange`.
 - **Validation:** `src/lib/validation/application.ts` is the single zod schema for the form and the actions. It turns form strings into typed data: DD/MM/YYYY dates, `£45k`/`£500/day` salaries into pence plus a period, IR35 cleared unless the role is a contract, city cleared for remote roles. The form (`application-form.tsx`) only hides and shows fields. The server decides what is valid.
-- **List state lives in the URL:** `src/lib/validation/filters.ts` parses and serialises `q`, `status`, `source`, `location`, `sort`, `dir` and `page`. Both the server query and the client `FiltersBar` use it.
+- **List state lives in the URL:** `src/lib/validation/filters.ts` parses and serialises `view` (table/board), `q`, `status`, `source`, `location`, `sort`, `dir` and `page`. Both the server query and the client `FiltersBar` use it. The board ignores `status`, sort and paging, because columns are statuses.
+- **Kanban** (`kanban-board.tsx`, dnd-kit): a drop calls `moveApplicationAction` → `changeStatus()`, with an optimistic move via `useOptimistic` that snaps back on error. Mouse and touch drag the whole card (touch needs a press-and-hold so swiping scrolls). The keyboard drags from the grip button, where arrows jump whole columns via a custom coordinate getter.
+- **Dashboard metrics** are pure functions in `src/lib/metrics.ts`, with the definitions tested there: response rate = heard back (Assessment/Interview/Offer/Rejected) ÷ reached Applied; the funnel counts "reached this stage or further", so it never widens; weeks start Monday in London. `src/server/queries/dashboard.ts` loads applications with their history and calls these.
+- **Charts** follow the dataviz skill: one validated accent hue, `--viz-accent`/`--viz-track` in `globals.css` (light and dark), bars ≤24px, a hover tooltip plus a "View as table" fallback. The funnel is an HTML meter list, not a chart library funnel.
 - **Dates and money:** use `src/lib/format.ts` only. Instants are `timestamptz`, shown in Europe/London. Calendar dates (`closingDate`, `appliedOn`) are Postgres `date`, formatted in UTC; use `londonToday()` for "today". Money is integer pence. Vitest runs with `TZ=America/New_York` on purpose, so code that relies on the machine's time zone fails.
 - **Companies, contacts and CV versions** are created on the fly from form text: companies are matched case-insensitively per user, and CV/cover letter labels are upserted.
-- **New signed-in routes** go under `src/app/(app)/` and must also be added to the matcher in `src/proxy.ts`.
+- **New signed-in routes** go under `src/app/(app)/`, must be added to the matcher in `src/proxy.ts`, and get a sidebar entry in `app-nav.tsx` only once the page exists (Next prefetches nav links, so a missing page logs 404s).
+- **Layout gotchas:** wide content needs `min-w-0` on its flex parent, and a horizontal scroll container needs `relative`, or absolutely positioned children (e.g. `sr-only` labels) escape it and widen the page.
 - Use UK English in all UI text.

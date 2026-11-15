@@ -4,7 +4,13 @@
  */
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, type ApplicationStatus, type Prisma } from "../src/generated/prisma/client";
+import { TZDate } from "@date-fns/tz";
+import {
+  PrismaClient,
+  type ApplicationStatus,
+  type InterviewType,
+  type Prisma,
+} from "../src/generated/prisma/client";
 
 const DEMO_EMAIL = "demo@example.com";
 const DAY = 86_400_000;
@@ -30,7 +36,26 @@ type SeedApp = {
   data?: Partial<Prisma.ApplicationUncheckedCreateInput>;
   contact?: { name: string; email?: string; phone?: string; agencyName?: string };
   cv?: string;
+  /** An interview N days from today at a London wall-clock hour. */
+  interview?: { inDays: number; hour: number; type: InterviewType; stage: string };
+  /** A follow-up reminder that fell due N days ago and is still open. */
+  overdueReminder?: { title: string; dueDaysAgo: number };
 };
+
+/** N days from today at hh:00 London time (BST-aware), as a UTC instant. */
+function londonAt(inDays: number, hour: number): Date {
+  const today = calendarDays(inDays);
+  return new Date(
+    new TZDate(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate(),
+      hour,
+      0,
+      "Europe/London",
+    ).getTime(),
+  );
+}
 
 const APPS: SeedApp[] = [
   {
@@ -49,6 +74,7 @@ const APPS: SeedApp[] = [
     },
     contact: { name: "Priya Shah", email: "priya.shah@example.com" },
     cv: "CV v3 – Backend",
+    interview: { inDays: 3, hour: 10, type: "VIDEO", stage: "2nd round – system design" },
   },
   {
     company: "Octopus Energy",
@@ -134,6 +160,7 @@ const APPS: SeedApp[] = [
       visaSponsorshipRequired: true,
     },
     cv: "CV v2 – Full stack",
+    overdueReminder: { title: "Follow up with Skyscanner", dueDaysAgo: 2 },
   },
   {
     company: "BBC",
@@ -259,7 +286,7 @@ async function main() {
     const firstApplied = changes.find((c) => c.status !== "SAVED" && c.status !== "WITHDRAWN");
     const last = changes[changes.length - 1];
 
-    await db.application.create({
+    const created = await db.application.create({
       data: {
         userId: user.id,
         companyId: company.id,
@@ -280,6 +307,30 @@ async function main() {
         },
       },
     });
+
+    if (seed.interview) {
+      const startsAt = londonAt(seed.interview.inDays, seed.interview.hour);
+      await db.interview.create({
+        data: {
+          applicationId: created.id,
+          type: seed.interview.type,
+          stage: seed.interview.stage,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
+        },
+      });
+    }
+    if (seed.overdueReminder) {
+      await db.reminder.create({
+        data: {
+          userId: user.id,
+          applicationId: created.id,
+          kind: "FOLLOW_UP",
+          title: seed.overdueReminder.title,
+          dueAt: londonAt(-seed.overdueReminder.dueDaysAgo, 9),
+        },
+      });
+    }
   }
 
   console.log(`Seeded ${APPS.length} applications for ${DEMO_EMAIL}`);

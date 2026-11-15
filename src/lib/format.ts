@@ -128,3 +128,13 @@ export function londonToday(now: DateInput = new Date()): Date {
 export function calendarDateToIso(value: DateInput): string {
   return format(toDate(value), "yyyy-MM-dd", { in: utc });
 }
+
+/** Calendar date → "9 Nov", for chart axes and compact lists. */
+export function formatCalendarDayMonth(value: DateInput): string {
+  return format(toDate(value), "d MMM", { in: utc });
+}
+
+/** Instant → "Mon 16 Nov, 14:30" in London time, for upcoming events. */
+export function formatEventTime(value: DateInput): string {
+  return format(toDate(value), "EEE d MMM, HH:mm", { in: london });
+}

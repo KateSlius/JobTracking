@@ -6,6 +6,8 @@ import {
   formatGBP,
   formatSalary,
   formatTime,
+  formatCalendarDayMonth,
+  formatEventTime,
   londonToday,
   londonWallTimeToUtc,
   parseUkDate,
@@ -112,6 +114,15 @@ describe("week and month boundaries", () => {
     expect(startOfLondonMonth("2026-11-15T12:00:00Z").toISOString()).toBe(
       "2026-11-01T00:00:00.000Z",
     );
+  });
+});
+
+describe("short formats", () => {
+  it("formats a calendar date as day and month", () => {
+    expect(formatCalendarDayMonth(new Date("2026-11-09T00:00:00Z"))).toBe("9 Nov");
+  });
+  it("formats an event in London time", () => {
+    expect(formatEventTime("2026-07-06T13:30:00Z")).toBe("Mon 6 Jul, 14:30");
   });
 });
 

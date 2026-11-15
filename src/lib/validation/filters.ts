@@ -2,6 +2,7 @@ import { ApplicationStatus, JobSource, LocationType } from "@/generated/prisma/e
 
 /** Applications list state, kept in the URL so views can be bookmarked and shared. */
 export type ApplicationFilters = {
+  view: ApplicationView;
   q: string;
   status: ApplicationStatus[];
   source: JobSource | null;
@@ -10,6 +11,10 @@ export type ApplicationFilters = {
   dir: "asc" | "desc";
   page: number;
 };
+
+/** Table is paginated and sortable; the board shows every status as a column. */
+export const VIEWS = ["table", "board"] as const;
+export type ApplicationView = (typeof VIEWS)[number];
 
 export const SORT_KEYS = ["updated", "closing", "applied", "company", "role"] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
@@ -34,6 +39,7 @@ export const DEFAULT_DIR: Record<SortKey, "asc" | "desc"> = {
 export const PAGE_SIZE = 25;
 
 const DEFAULTS: ApplicationFilters = {
+  view: "table",
   q: "",
   status: [],
   source: null,
@@ -67,6 +73,7 @@ export function parseFilters(params: RawParams): ApplicationFilters {
   const page = Math.max(1, Math.floor(Number(first(params.page)) || 1));
 
   return {
+    view: oneOf(VIEWS, first(params.view)) ?? DEFAULTS.view,
     q: (first(params.q) ?? "").trim().slice(0, 100),
     status: [...new Set(status)],
     source: oneOf(Object.values(JobSource), first(params.source)?.toUpperCase()),
@@ -81,6 +88,7 @@ export function parseFilters(params: RawParams): ApplicationFilters {
 export function filtersToSearchParams(filters: Partial<ApplicationFilters>): URLSearchParams {
   const f = { ...DEFAULTS, ...filters };
   const params = new URLSearchParams();
+  if (f.view !== DEFAULTS.view) params.set("view", f.view);
   if (f.q) params.set("q", f.q);
   if (f.status.length) params.set("status", f.status.join(","));
   if (f.source) params.set("source", f.source);
@@ -92,5 +100,5 @@ export function filtersToSearchParams(filters: Partial<ApplicationFilters>): URL
 }
 
 export function hasActiveFilters(f: ApplicationFilters): boolean {
-  return Boolean(f.q || f.status.length || f.source || f.location);
+  return Boolean(f.q || (f.view === "table" && f.status.length) || f.source || f.location);
 }

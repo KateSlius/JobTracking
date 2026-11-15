@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, Search, X } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Columns3, Rows3, Search, X } from "lucide-react";
 import type { ApplicationStatus } from "@/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
   DEFAULT_DIR,
   SORT_KEYS,
   SORT_LABEL,
+  VIEWS,
   filtersToSearchParams,
   hasActiveFilters,
   parseFilters,
@@ -60,6 +61,30 @@ export function FiltersBar() {
       aria-busy={pending}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div role="group" aria-label="View" className="bg-muted flex w-fit rounded-lg p-0.5">
+          {VIEWS.map((view) => (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={filters.view === view}
+              onClick={() => update({ view })}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1 text-sm transition-colors",
+                filters.view === view
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {view === "table" ? (
+                <Rows3 className="size-4" aria-hidden />
+              ) : (
+                <Columns3 className="size-4" aria-hidden />
+              )}
+              {view === "table" ? "Table" : "Board"}
+            </button>
+          ))}
+        </div>
+
         <div className="relative sm:w-72">
           <Search
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
@@ -114,37 +139,39 @@ export function FiltersBar() {
           ))}
         </NativeSelect>
 
-        <div className="flex items-center gap-1 sm:ml-auto">
-          <label htmlFor={`${ids}-sort`} className="text-muted-foreground text-sm">
-            Sort by
-          </label>
-          <NativeSelect
-            id={`${ids}-sort`}
-            value={filters.sort}
-            onChange={(e) => {
-              const sort = e.target.value as ApplicationFilters["sort"];
-              update({ sort, dir: DEFAULT_DIR[sort] });
-            }}
-          >
-            {SORT_KEYS.map((key) => (
-              <NativeSelectOption key={key} value={key}>
-                {SORT_LABEL[key]}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => update({ dir: filters.dir === "asc" ? "desc" : "asc" })}
-            aria-label={
-              filters.dir === "asc"
-                ? "Sorted ascending. Switch to descending"
-                : "Sorted descending. Switch to ascending"
-            }
-          >
-            {filters.dir === "asc" ? <ArrowUpNarrowWide /> : <ArrowDownWideNarrow />}
-          </Button>
-        </div>
+        {filters.view === "table" && (
+          <div className="flex items-center gap-1 sm:ml-auto">
+            <label htmlFor={`${ids}-sort`} className="text-muted-foreground text-sm">
+              Sort by
+            </label>
+            <NativeSelect
+              id={`${ids}-sort`}
+              value={filters.sort}
+              onChange={(e) => {
+                const sort = e.target.value as ApplicationFilters["sort"];
+                update({ sort, dir: DEFAULT_DIR[sort] });
+              }}
+            >
+              {SORT_KEYS.map((key) => (
+                <NativeSelectOption key={key} value={key}>
+                  {SORT_LABEL[key]}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => update({ dir: filters.dir === "asc" ? "desc" : "asc" })}
+              aria-label={
+                filters.dir === "asc"
+                  ? "Sorted ascending. Switch to descending"
+                  : "Sorted descending. Switch to ascending"
+              }
+            >
+              {filters.dir === "asc" ? <ArrowUpNarrowWide /> : <ArrowDownWideNarrow />}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div
@@ -152,25 +179,27 @@ export function FiltersBar() {
         role="group"
         aria-label="Filter by status"
       >
-        {STATUS_ORDER.map((status) => {
-          const active = filters.status.includes(status);
-          return (
-            <button
-              key={status}
-              type="button"
-              aria-pressed={active}
-              onClick={() => toggleStatus(status)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs transition-colors",
-                active
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {STATUS_LABEL[status]}
-            </button>
-          );
-        })}
+        {/* The board already splits by status, so status chips only apply to the table. */}
+        {filters.view === "table" &&
+          STATUS_ORDER.map((status) => {
+            const active = filters.status.includes(status);
+            return (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleStatus(status)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs transition-colors",
+                  active
+                    ? "bg-foreground text-background border-foreground"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {STATUS_LABEL[status]}
+              </button>
+            );
+          })}
         {hasActiveFilters(filters) && (
           <Button
             variant="ghost"

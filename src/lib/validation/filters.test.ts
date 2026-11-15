@@ -4,6 +4,7 @@ import { filtersToSearchParams, parseFilters } from "./filters";
 describe("parseFilters", () => {
   it("returns defaults for empty params", () => {
     expect(parseFilters({})).toEqual({
+      view: "table",
       q: "",
       status: [],
       source: null,
@@ -31,6 +32,14 @@ describe("parseFilters", () => {
       page: 1,
       source: null,
     });
+  });
+
+  it("reads the board view and ignores unknown views", () => {
+    expect(parseFilters({ view: "board" }).view).toBe("board");
+    expect(parseFilters({ view: "gantt" }).view).toBe("table");
+    expect(filtersToSearchParams(parseFilters({ view: "board", q: "x" })).toString()).toBe(
+      "view=board&q=x",
+    );
   });
 
   it("round-trips through the URL and omits defaults", () => {

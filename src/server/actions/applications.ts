@@ -103,3 +103,28 @@ export async function deleteApplicationAction(id: string): Promise<void> {
   }
   redirect("/applications");
 }
+
+/** Kanban drop. Same service as the status form, so the move is recorded in the history. */
+export async function moveApplicationAction(
+  id: string,
+  toStatus: string,
+): Promise<StatusActionState> {
+  const user = await requireUser();
+  if (!(Object.values(ApplicationStatus) as string[]).includes(toStatus)) {
+    return { error: "Pick a valid status." };
+  }
+  try {
+    await changeStatus({
+      userId: user.id,
+      applicationId: id,
+      toStatus: toStatus as ApplicationStatus,
+    });
+  } catch (error) {
+    if (error instanceof ApplicationNotFoundError) {
+      return { error: "This application no longer exists." };
+    }
+    throw error;
+  }
+  refresh();
+  return { ok: true };
+}

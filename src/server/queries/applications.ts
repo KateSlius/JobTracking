@@ -24,13 +24,16 @@ function orderBy(sort: SortKey, dir: "asc" | "desc"): Prisma.ApplicationOrderByW
   }
 }
 
-export async function listApplications(filters: ApplicationFilters) {
-  const user = await requireUser();
-
-  const where: Prisma.ApplicationWhereInput = {
-    userId: user.id,
+/** Search and filter conditions shared by the table and the board. */
+function filterWhere(
+  userId: string,
+  filters: ApplicationFilters,
+  { includeStatus }: { includeStatus: boolean },
+): Prisma.ApplicationWhereInput {
+  return {
+    userId,
     archivedAt: null,
-    ...(filters.status.length ? { status: { in: filters.status } } : {}),
+    ...(includeStatus && filters.status.length ? { status: { in: filters.status } } : {}),
     ...(filters.source ? { source: filters.source } : {}),
     ...(filters.location ? { locationType: filters.location } : {}),
     ...(filters.q
@@ -43,6 +46,26 @@ export async function listApplications(filters: ApplicationFilters) {
         }
       : {}),
   };
+}
+
+const listRowSelect = {
+  id: true,
+  roleTitle: true,
+  status: true,
+  locationType: true,
+  city: true,
+  salaryMinPence: true,
+  salaryMaxPence: true,
+  salaryPeriod: true,
+  closingDate: true,
+  appliedOn: true,
+  updatedAt: true,
+  company: { select: { name: true } },
+} satisfies Prisma.ApplicationSelect;
+
+export async function listApplications(filters: ApplicationFilters) {
+  const user = await requireUser();
+  const where = filterWhere(user.id, filters, { includeStatus: true });
 
   const [total, rows] = await db.$transaction([
     db.application.count({ where }),
@@ -51,24 +74,30 @@ export async function listApplications(filters: ApplicationFilters) {
       orderBy: orderBy(filters.sort, filters.dir),
       skip: (filters.page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      select: {
-        id: true,
-        roleTitle: true,
-        status: true,
-        locationType: true,
-        city: true,
-        salaryMinPence: true,
-        salaryMaxPence: true,
-        salaryPeriod: true,
-        closingDate: true,
-        appliedOn: true,
-        updatedAt: true,
-        company: { select: { name: true } },
-      },
+      select: listRowSelect,
     }),
   ]);
 
   return { rows, total, pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+/** Cap on board cards. Past this the board says so and points to the table. */
+export const BOARD_LIMIT = 300;
+
+/** Board view: every status (columns), no pagination, most recently updated first. */
+export async function listBoardApplications(filters: ApplicationFilters) {
+  const user = await requireUser();
+  const where = filterWhere(user.id, filters, { includeStatus: false });
+  const [total, rows] = await db.$transaction([
+    db.application.count({ where }),
+    db.application.findMany({
+      where,
+      orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+      take: BOARD_LIMIT,
+      select: listRowSelect,
+    }),
+  ]);
+  return { rows, total, truncated: total > rows.length };
 }
 
 export type ApplicationListRow = Awaited<ReturnType<typeof listApplications>>["rows"][number];

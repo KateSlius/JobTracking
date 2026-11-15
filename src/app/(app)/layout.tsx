@@ -19,7 +19,7 @@ async function AccountSlot() {
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1 flex-col md:flex-row">
-      <aside className="flex items-center justify-between gap-4 border-b px-4 py-3 md:w-56 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0">
+      <aside className="flex items-center justify-between gap-4 border-b px-4 py-3 md:w-56 md:shrink-0 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0">
         <Link href="/dashboard" className="px-3 font-semibold">
           Job Tracker
         </Link>
@@ -27,7 +27,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <AppNav />
         </Suspense>
       </aside>
-      <div className="flex flex-1 flex-col">
+      {/* min-w-0 lets wide content (the Kanban board) scroll inside itself instead of
+          stretching the page sideways. */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-end border-b px-4">
           <Suspense fallback={<div className="bg-muted size-8 rounded-full" />}>
             <AccountSlot />

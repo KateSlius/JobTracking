@@ -5,13 +5,22 @@
 import {
   ApplicationStatus,
   ContractType,
+  InterviewType,
   Ir35Status,
   JobSource,
   LocationType,
   SalaryPeriod,
 } from "@/generated/prisma/enums";
 
-export { ApplicationStatus, ContractType, Ir35Status, JobSource, LocationType, SalaryPeriod };
+export {
+  ApplicationStatus,
+  ContractType,
+  InterviewType,
+  Ir35Status,
+  JobSource,
+  LocationType,
+  SalaryPeriod,
+};
 
 /** Pipeline order, used for the status picker, filters, Kanban columns and the funnel. */
 export const STATUS_ORDER = [
@@ -73,6 +82,13 @@ export const IR35_LABEL: Record<Ir35Status, string> = {
   INSIDE: "Inside IR35",
   OUTSIDE: "Outside IR35",
   UNDETERMINED: "IR35 not yet determined",
+};
+
+export const INTERVIEW_TYPE_LABEL: Record<InterviewType, string> = {
+  PHONE: "Phone",
+  VIDEO: "Video",
+  IN_PERSON: "In person",
+  ASSESSMENT_CENTRE: "Assessment centre",
 };
 
 export const SALARY_PERIOD_LABEL: Record<SalaryPeriod, string> = {
