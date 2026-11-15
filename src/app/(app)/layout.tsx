@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser, signOut } from "@/lib/auth";
 import { AppNav, NavLinks } from "@/components/layout/app-nav";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
+import { getNotifications } from "@/server/queries/reminders";
 
 async function signOutAction() {
   "use server";
@@ -12,8 +14,13 @@ async function signOutAction() {
 // Reads the session, so it streams in behind a Suspense boundary (Cache Components rule).
 // Real access control lives in requireUser() calls in each page/query/action, not here.
 async function AccountSlot() {
-  const user = await requireUser();
-  return <UserMenu user={user} signOutAction={signOutAction} />;
+  const [user, notifications] = await Promise.all([requireUser(), getNotifications()]);
+  return (
+    <div className="flex items-center gap-1">
+      <NotificationBell data={notifications} />
+      <UserMenu user={user} signOutAction={signOutAction} />
+    </div>
+  );
 }
 
 export default function AppLayout({ children }: LayoutProps<"/">) {

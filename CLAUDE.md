@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
-UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phases 0–3 are done: foundations, core CRUD, Kanban board and dashboard, interviews and calendar.
+UK job application tracker. The full spec (data model, routes, build phases) is in `../PLAN.md`, outside this repo. Phases 0–4 are done: foundations, core CRUD, Kanban board and dashboard, interviews and calendar, reminders and email.
 
 ## Commands
 
@@ -18,7 +18,8 @@ npm test               # vitest run
 npx vitest run src/lib/salary.test.ts   # one file
 npx vitest run -t "BST"                 # tests matching a name
 npm run db:migrate     # prisma migrate dev; run `npm run db:generate` after (Prisma 7 no longer does it)
-npx prisma db seed     # demo@example.com: 12 applications, an upcoming and a past interview, an overdue reminder; safe to re-run
+npx prisma db seed     # demo@example.com: 12 applications, interviews, automatic + custom reminders; safe to re-run
+npm run reminders:run  # run the reminders cron against the local server (needs CRON_SECRET in .env)
 npm run db:studio
 ```
 
@@ -27,7 +28,7 @@ npm run db:studio
 No Docker here. Use Prisma's embedded Postgres: `npx prisma dev --detach --name uk-job-tracker`, then `npx prisma dev ls` for ports. Its quirks:
 
 - Every database name on a port is the same database, so `.env` needs `SHADOW_DATABASE_URL` pointing at the next port (the shadow server). Without it, `migrate dev` writes the shadow copy into your real data.
-- It can't handle several connections at once: set `DATABASE_POOL_MAX=1`, or queries fail with `bind message supplies N parameters`.
+- It can't handle several connections at once: set `DATABASE_POOL_MAX=1`, or queries fail with `bind message supplies N parameters`. Even then, a test script holding its own connection, or separate server bundles, can occasionally clash and produce the same error. That's local-only; hosted Postgres doesn't do it.
 
 ## Versions that differ from older docs
 
@@ -53,6 +54,10 @@ Request flow for user data: page (Server Component inside `<Suspense>`) → `src
 - **Dates and money:** use `src/lib/format.ts` only. Instants are `timestamptz`, shown in Europe/London. Calendar dates (`closingDate`, `appliedOn`) are Postgres `date`, formatted in UTC; use `londonToday()` for "today". Money is integer pence. Vitest runs with `TZ=America/New_York` on purpose, so code that relies on the machine's time zone fails.
 - **Companies, contacts and CV versions** are created on the fly from form text: companies are matched case-insensitively per user, and CV/cover letter labels are upserted.
 - **New signed-in routes** go under `src/app/(app)/`, must be added to the matcher in `src/proxy.ts`, and get a sidebar entry in `app-nav.tsx` only once the page exists (Next prefetches nav links, so a missing page logs 404s).
+- **Reminders:** automatic ones (closing date, follow-up, interview prep, all at 09:00 London) are planned by the pure `planAutoReminders()` (`src/lib/reminders/plan.ts`) and written by `syncAutoReminders()` (`sync.ts`). Call sync inside the transaction of **every** write that changes an application's status, dates or interviews; the application, status and interview services already do. Sync compares against `plannedAt` (not `dueAt`), so snoozes survive, and it never recreates a reminder that was done or dismissed for the same plan. Custom reminders (`kind: CUSTOM`) are never touched by sync.
+- **Reminders cron** (`/api/cron/reminders`, `src/server/services/reminder-job.ts`, scheduled in `vercel.json` daily at 09:00 UTC, the Hobby plan limit): 1) re-sync reminders about to fire, 2) claim due reminders and create notifications in one transaction (`UPDATE … RETURNING … FOR UPDATE SKIP LOCKED`), 3) claim reminders to email (due in the last 48 h, user opted in), 4) send one digest per user and release the claim if sending fails. Safe to run concurrently. It requires `CRON_SECRET` and refuses to run without it.
+- **Email** goes through `sendEmail()` (`src/server/email/send.ts`): Resend when `AUTH_RESEND_KEY` is set; otherwise, in development, JSON + HTML files in `.outbox/`; in production without a key it fails loudly. Templates are pure functions in `src/lib/email/`, with every value HTML-escaped.
+- **Base UI menus:** `DropdownMenuLabel` must be inside a `DropdownMenuGroup`, or the menu crashes on open (Base UI error #31). Put actions in menu items, not buttons inside labels.
 - **`APP_URL`** (no trailing slash) is the public address used in calendar invites, and in emails from Phase 4.
 - **Render purity:** lint forbids `Date.now()`/`new Date()` in components. Read the clock in queries, after `requireUser()` (which calls `connection()`); reading it earlier, even as a default argument, fails the build.
 - **Layout gotchas:** wide content needs `min-w-0` on its flex parent, and a horizontal scroll container needs `relative`, or absolutely positioned children (e.g. `sr-only` labels) escape it and widen the page.

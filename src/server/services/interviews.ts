@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { syncAutoReminders } from "@/lib/reminders/sync";
 import type { InterviewInput } from "@/lib/validation/interview";
 
 export class InterviewNotFoundError extends Error {
@@ -8,34 +9,54 @@ export class InterviewNotFoundError extends Error {
   }
 }
 
-/** Ownership goes through the parent application: an interview is the user's if its application is. */
-function ownedBy(userId: string) {
-  return { application: { userId } };
-}
+// Ownership goes through the parent application: an interview is the user's if its application is.
+// Every write re-syncs the application's prep reminders in the same transaction.
 
 export async function createInterview(
   userId: string,
   applicationId: string,
   input: InterviewInput,
 ) {
-  const app = await db.application.findFirst({
-    where: { id: applicationId, userId },
-    select: { id: true },
+  return db.$transaction(async (tx) => {
+    const app = await tx.application.findFirst({
+      where: { id: applicationId, userId },
+      select: { id: true },
+    });
+    if (!app) throw new InterviewNotFoundError();
+    const interview = await tx.interview.create({
+      data: { ...input, applicationId },
+      select: { id: true },
+    });
+    await syncAutoReminders(tx, userId, applicationId);
+    return interview;
   });
-  if (!app) throw new InterviewNotFoundError();
-  return db.interview.create({ data: { ...input, applicationId }, select: { id: true } });
 }
 
 /** Bumps icsSequence so calendars that re-import the .ics treat it as an update. */
 export async function updateInterview(userId: string, id: string, input: InterviewInput) {
-  const { count } = await db.interview.updateMany({
-    where: { id, ...ownedBy(userId) },
-    data: { ...input, icsSequence: { increment: 1 } },
+  await db.$transaction(async (tx) => {
+    const existing = await tx.interview.findFirst({
+      where: { id, application: { userId } },
+      select: { applicationId: true },
+    });
+    if (!existing) throw new InterviewNotFoundError();
+    await tx.interview.update({
+      where: { id },
+      data: { ...input, icsSequence: { increment: 1 } },
+    });
+    await syncAutoReminders(tx, userId, existing.applicationId);
   });
-  if (count === 0) throw new InterviewNotFoundError();
 }
 
 export async function deleteInterview(userId: string, id: string) {
-  const { count } = await db.interview.deleteMany({ where: { id, ...ownedBy(userId) } });
-  if (count === 0) throw new InterviewNotFoundError();
+  await db.$transaction(async (tx) => {
+    const existing = await tx.interview.findFirst({
+      where: { id, application: { userId } },
+      select: { applicationId: true },
+    });
+    if (!existing) throw new InterviewNotFoundError();
+    // The interview's own prep reminders cascade-delete with it.
+    await tx.interview.delete({ where: { id } });
+    await syncAutoReminders(tx, userId, existing.applicationId);
+  });
 }

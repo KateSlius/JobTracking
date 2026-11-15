@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, CalendarDays, LayoutDashboard } from "lucide-react";
+import { Bell, Briefcase, CalendarDays, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Only routes that exist: Next prefetches every link, so a missing page shows up as a 404.
-// Add Reminders (Phase 4) and Settings (Phase 5) as they're built.
+// Add Settings (Phase 5) when it's built.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/applications", label: "Applications", icon: Briefcase },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/reminders", label: "Reminders", icon: Bell },
 ] as const;
 
 /** Highlights the current section. Must sit inside <Suspense> (usePathname on dynamic routes). */

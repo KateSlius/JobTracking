@@ -10,6 +10,8 @@ import { StatusBadge } from "@/components/applications/status-badge";
 import { StatusChanger } from "@/components/applications/status-changer";
 import { StatusTimeline } from "@/components/applications/status-timeline";
 import { InterviewsSection } from "@/components/interviews/interviews-section";
+import { NoReminders, ReminderItem } from "@/components/reminders/reminder-item";
+import { ReminderForm } from "@/components/reminders/reminder-form";
 import {
   CONTRACT_TYPE_LABEL,
   IR35_LABEL,
@@ -24,6 +26,7 @@ import {
   updateInterviewAction,
 } from "@/server/actions/interviews";
 import { getApplication, type ApplicationDetail } from "@/server/queries/applications";
+import { getApplicationReminders } from "@/server/queries/reminders";
 
 export const metadata: Metadata = { title: "Application" };
 
@@ -54,7 +57,7 @@ function contractText(app: ApplicationDetail) {
 
 async function ApplicationView({ params }: { params: PageProps<"/applications/[id]">["params"] }) {
   const { id } = await params;
-  const app = await getApplication(id);
+  const [app, reminders] = await Promise.all([getApplication(id), getApplicationReminders(id)]);
   if (!app) notFound();
 
   const label = `${app.roleTitle} at ${app.company.name}`;
@@ -197,6 +200,28 @@ async function ApplicationView({ params }: { params: PageProps<"/applications/[i
             </CardHeader>
             <CardContent>
               <StatusChanger current={app.status} action={changeStatusAction.bind(null, app.id)} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Reminders</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {reminders.length ? (
+                <ul className="flex flex-col divide-y">
+                  {reminders.map((r) => (
+                    <ReminderItem
+                      key={r.id}
+                      reminder={r}
+                      overdue={r.dueAt.getTime() <= app.loadedAt}
+                      showApplication={false}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <NoReminders>No reminders for this application.</NoReminders>
+              )}
+              <ReminderForm applicationId={app.id} />
             </CardContent>
           </Card>
           <Card>

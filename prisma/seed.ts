@@ -11,6 +11,7 @@ import {
   type InterviewType,
   type Prisma,
 } from "../src/generated/prisma/client";
+import { syncAutoReminders } from "../src/lib/reminders/sync";
 
 const DEMO_EMAIL = "demo@example.com";
 const DAY = 86_400_000;
@@ -45,8 +46,6 @@ type SeedApp = {
     location?: string;
     outcome?: string;
   };
-  /** A follow-up reminder that fell due N days ago and is still open. */
-  overdueReminder?: { title: string; dueDaysAgo: number };
 };
 
 /** N days from today at hh:00 London time (BST-aware), as a UTC instant. */
@@ -167,7 +166,6 @@ const APPS: SeedApp[] = [
       visaSponsorshipRequired: true,
     },
     cv: "CV v2 – Full stack",
-    overdueReminder: { title: "Follow up with Skyscanner", dueDaysAgo: 2 },
   },
   {
     company: "BBC",
@@ -337,18 +335,19 @@ async function main() {
         },
       });
     }
-    if (seed.overdueReminder) {
-      await db.reminder.create({
-        data: {
-          userId: user.id,
-          applicationId: created.id,
-          kind: "FOLLOW_UP",
-          title: seed.overdueReminder.title,
-          dueAt: londonAt(-seed.overdueReminder.dueDaysAgo, 9),
-        },
-      });
-    }
+    // Same rules as the app: closing-date, follow-up and interview-prep reminders.
+    await syncAutoReminders(db, user.id, created.id);
   }
+
+  // One custom reminder, so the reminders page shows both kinds.
+  await db.reminder.create({
+    data: {
+      userId: user.id,
+      kind: "CUSTOM",
+      title: "Update LinkedIn headline",
+      dueAt: londonAt(1, 18),
+    },
+  });
 
   console.log(`Seeded ${APPS.length} applications for ${DEMO_EMAIL}`);
 }

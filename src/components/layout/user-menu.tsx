@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -40,10 +41,13 @@ export function UserMenu({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel className="flex flex-col">
-          {user.name && <span className="text-foreground font-medium">{user.name}</span>}
-          <span className="truncate text-xs font-normal">{user.email}</span>
-        </DropdownMenuLabel>
+        {/* Base UI requires labels inside a group (error #31 otherwise). */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col">
+            {user.name && <span className="text-foreground font-medium">{user.name}</span>}
+            <span className="truncate text-xs font-normal">{user.email}</span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void signOutAction()}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>

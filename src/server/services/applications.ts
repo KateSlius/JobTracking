@@ -2,6 +2,7 @@ import "server-only";
 import type { DocumentKind, Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { londonToday } from "@/lib/format";
+import { syncAutoReminders } from "@/lib/reminders/sync";
 import type { ApplicationInput } from "@/lib/validation/application";
 import { ApplicationNotFoundError, impliesApplied, recordInitialStatus } from "./status";
 
@@ -107,6 +108,7 @@ export async function createApplication(userId: string, input: ApplicationInput)
       select: { id: true },
     });
     await recordInitialStatus(tx, app.id, input.status);
+    await syncAutoReminders(tx, userId, app.id);
     return app;
   });
 }
@@ -142,6 +144,7 @@ export async function updateApplication(userId: string, id: string, input: Appli
         appliedOn: input.appliedOn,
       },
     });
+    await syncAutoReminders(tx, userId, id);
   });
 }
 

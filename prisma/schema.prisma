@@ -290,6 +290,12 @@ model Reminder {
   dueAt         DateTime     @db.Timestamptz(3)
   completedAt   DateTime?    @db.Timestamptz(3)
   dismissedAt   DateTime?    @db.Timestamptz(3)
+  /// For automatic reminders: when the schedule says it's due. `dueAt` starts equal to this and
+  /// moves when snoozed, so re-syncing compares against plannedAt and never undoes a snooze.
+  /// Null for custom reminders.
+  plannedAt     DateTime?    @db.Timestamptz(3)
+  /// Set when the cron job creates the in-app notification. Claimed atomically, so it runs once.
+  notifiedAt    DateTime?    @db.Timestamptz(3)
   /// Set when the email is sent; the cron job skips rows where this is not null.
   emailedAt     DateTime?    @db.Timestamptz(3)
   createdAt     DateTime     @default(now()) @db.Timestamptz(3)
@@ -300,7 +306,8 @@ model Reminder {
   notifications Notification[]
 
   @@index([userId, dueAt])
-  @@index([dueAt, emailedAt])
+  @@index([dueAt, notifiedAt])
+  @@index([applicationId])
 }
 
 model Notification {

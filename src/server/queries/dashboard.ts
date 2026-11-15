@@ -53,6 +53,7 @@ export async function getDashboard() {
       take: 5,
       select: {
         id: true,
+        kind: true,
         title: true,
         dueAt: true,
         application: { select: { id: true, company: { select: { name: true } } } },
@@ -70,6 +71,12 @@ export async function getDashboard() {
       select: { id: true, roleTitle: true, closingDate: true, company: { select: { name: true } } },
     }),
   ]);
+
+  // A closing-date reminder and the "closes in N days" row would say the same thing twice.
+  const closingSoonIds = new Set(closingSoon.map((a) => a.id));
+  const attentionReminders = overdueReminders.filter(
+    (r) => !(r.kind === "CLOSING_DATE" && r.application && closingSoonIds.has(r.application.id)),
+  );
 
   const metricsApps: MetricsApplication[] = apps.map((a) => ({
     status: a.status,
@@ -89,7 +96,7 @@ export async function getDashboard() {
     weekly: appliedPerWeek(metricsApps, now, 8),
     today,
     upcomingInterviews,
-    overdueReminders,
+    overdueReminders: attentionReminders,
     closingSoon,
   };
 }

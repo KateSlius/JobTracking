@@ -3,6 +3,7 @@ import type { ApplicationStatus, Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { londonToday } from "@/lib/format";
 import { STATUS_ORDER } from "@/lib/constants";
+import { syncAutoReminders } from "@/lib/reminders/sync";
 
 /**
  * The only place an application's status changes. Every change writes a StatusChange row in the
@@ -69,6 +70,8 @@ export async function changeStatus({
         note: note?.trim() || null,
       },
     });
+    // e.g. moving past Applied removes the follow-up; Rejected removes everything.
+    await syncAutoReminders(tx, userId, applicationId, now);
     return { changed: true };
   });
 }

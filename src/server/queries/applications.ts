@@ -119,6 +119,8 @@ export async function getApplication(id: string) {
   const now = Date.now();
   return {
     ...app,
+    /** When this was loaded, for "overdue" checks without reading the clock during render. */
+    loadedAt: now,
     interviews: app.interviews.map((i) => ({ ...i, isPast: i.endsAt.getTime() < now })),
   };
 }
