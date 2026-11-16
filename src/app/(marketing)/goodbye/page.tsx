@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 
 export const metadata: Metadata = { title: "Account deleted" };
 
@@ -12,9 +11,9 @@ export default function GoodbyePage() {
         Your applications, interviews, reminders and notes are gone. We&apos;ve emailed you to
         confirm. Good luck with the job search.
       </p>
-      <Button variant="outline" render={<Link href="/" />}>
+      <LinkButton variant="outline" href="/">
         Back to the home page
-      </Button>
+      </LinkButton>
     </main>
   );
 }

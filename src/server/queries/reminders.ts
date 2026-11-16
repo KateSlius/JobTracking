@@ -54,6 +54,7 @@ export async function getRemindersPage() {
     upcoming,
     done,
     emailRemindersEnabled: settings.emailRemindersEnabled,
+    isDemo: user.isDemo,
     applications: applications.map((a) => ({
       id: a.id,
       label: `${a.roleTitle} – ${a.company.name}`,

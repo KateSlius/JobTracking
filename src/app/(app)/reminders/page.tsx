@@ -73,7 +73,7 @@ async function RemindersContent() {
           title="Email"
           description="Reminders always show here and under the bell. Email is optional."
         >
-          <EmailToggle enabled={d.emailRemindersEnabled} />
+          <EmailToggle enabled={d.emailRemindersEnabled} demo={d.isDemo} />
         </Section>
         <Section title="Automatic reminders">
           <ul className="text-muted-foreground flex list-disc flex-col gap-1 pl-4 text-sm">

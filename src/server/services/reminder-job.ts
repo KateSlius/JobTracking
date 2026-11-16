@@ -10,6 +10,7 @@ import { sendEmail } from "@/server/email/send";
 /** Reminders that fell due longer ago than this are shown in the app but never emailed. */
 const EMAIL_WINDOW_HOURS = 48;
 const BATCH = 1000;
+export const DEMO_ACCOUNT_HOURS = 24;
 
 type Claimed = {
   id: string;
@@ -20,6 +21,7 @@ type Claimed = {
 };
 
 export type ReminderJobResult = {
+  demoAccountsDeleted: number;
   resynced: number;
   notified: number;
   emailsSent: number;
@@ -33,12 +35,22 @@ export type ReminderJobResult = {
  */
 export async function runReminderJob(now: Date = new Date()): Promise<ReminderJobResult> {
   const result: ReminderJobResult = {
+    demoAccountsDeleted: 0,
     resynced: 0,
     notified: 0,
     emailsSent: 0,
     emailsFailed: 0,
     errors: [],
   };
+
+  // 0. "Try the demo" accounts live for 24 hours; deleting the user cascades to all their data.
+  const { count: demoAccountsDeleted } = await db.user.deleteMany({
+    where: {
+      isDemo: true,
+      createdAt: { lt: new Date(now.getTime() - DEMO_ACCOUNT_HOURS * 3_600_000) },
+    },
+  });
+  result.demoAccountsDeleted = demoAccountsDeleted;
 
   // 1. Re-plan automatic reminders that are about to fire. Time alone can make one obsolete
   //    (the closing date passed, the interview happened) without any edit triggering a sync.

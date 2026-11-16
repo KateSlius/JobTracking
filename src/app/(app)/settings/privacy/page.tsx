@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowLeft, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AnchorButton } from "@/components/ui/link-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteAccountForm } from "@/components/settings/delete-account-form";
 import { requireUser } from "@/lib/auth";
@@ -41,9 +41,9 @@ export default function PrivacySettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" render={<a href="/api/export" download />}>
+          <AnchorButton variant="outline" href="/api/export" download>
             <Download /> Download my data
-          </Button>
+          </AnchorButton>
         </CardContent>
       </Card>
       <Card className="border-destructive/40">

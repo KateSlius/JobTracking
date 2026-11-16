@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser, signOut } from "@/lib/auth";
 import { AppNav, NavLinks } from "@/components/layout/app-nav";
+import { DemoBanner } from "@/components/layout/demo-banner";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
 import { getNotifications } from "@/server/queries/reminders";
@@ -56,6 +57,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         tabIndex={-1}
         className="col-span-2 row-start-2 min-w-0 px-4 py-6 outline-none md:col-span-1 md:col-start-2 md:px-8"
       >
+        <Suspense>
+          <DemoBanner />
+        </Suspense>
         {children}
       </main>
     </div>

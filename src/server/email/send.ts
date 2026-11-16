@@ -30,6 +30,8 @@ function transport(): Transport | null {
 }
 
 export async function sendEmail(email: OutgoingEmail): Promise<SendResult> {
+  // .invalid is reserved and can never receive mail (RFC 2606); demo accounts use it.
+  if (/\.invalid$/i.test(email.to)) return { ok: true, id: "skipped-invalid-domain" };
   const mode = transport();
 
   if (mode === "outbox") {

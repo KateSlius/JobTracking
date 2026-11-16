@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { filtersToSearchParams, type ApplicationFilters } from "@/lib/validation/filters";
 
 export function Pagination({
@@ -29,18 +29,18 @@ export function Pagination({
       {pageCount > 1 && (
         <div className="flex gap-2">
           {page > 1 ? (
-            <Button variant="outline" size="sm" render={<Link href={href(page - 1)} />}>
+            <LinkButton variant="outline" size="sm" href={href(page - 1)}>
               Previous
-            </Button>
+            </LinkButton>
           ) : (
             <Button variant="outline" size="sm" disabled>
               Previous
             </Button>
           )}
           {page < pageCount ? (
-            <Button variant="outline" size="sm" render={<Link href={href(page + 1)} />}>
+            <LinkButton variant="outline" size="sm" href={href(page + 1)}>
               Next
-            </Button>
+            </LinkButton>
           ) : (
             <Button variant="outline" size="sm" disabled>
               Next

@@ -85,6 +85,7 @@ export async function deleteReminderAction(id: string) {
 
 export async function setEmailRemindersAction(enabled: boolean) {
   const user = await requireUser();
+  if (user.isDemo) return; // demo addresses can't receive email
   await db.user.update({ where: { id: user.id }, data: { emailRemindersEnabled: enabled } });
   refresh();
 }

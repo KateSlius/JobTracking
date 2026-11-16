@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 
 // Error boundaries must be Client Components. In production, server error messages are replaced
 // with a generic one; the digest matches the server logs.
@@ -22,9 +22,9 @@ export default function AppError({ error, retry }: { error: unknown; retry: () =
       </p>
       <div className="flex gap-2">
         <Button onClick={() => retry()}>Try again</Button>
-        <Button variant="outline" render={<Link href="/dashboard" />}>
+        <LinkButton variant="outline" href="/dashboard">
           Go to dashboard
-        </Button>
+        </LinkButton>
       </div>
     </div>
   );

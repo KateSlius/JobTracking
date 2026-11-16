@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { AlarmClock, CalendarClock, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/applications/status-badge";
 import { FunnelMeters } from "@/components/dashboard/funnel-meters";
@@ -124,9 +124,9 @@ function DashboardContent({ d }: { d: Dashboard }) {
         <p className="text-muted-foreground max-w-sm text-sm">
           Add your first application to see your pipeline, response rate and what needs attention.
         </p>
-        <Button render={<Link href="/applications/new" />}>
+        <LinkButton href="/applications/new">
           <Plus /> Add application
-        </Button>
+        </LinkButton>
       </div>
     );
   }

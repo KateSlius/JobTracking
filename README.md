@@ -11,6 +11,7 @@ Track job applications, interviews and follow-ups. Built for job seekers in the 
 - **Interviews:** a calendar (month, week and list views), plus adding interviews to Google, Outlook or Apple Calendar via `.ics`.
 - **Reminders:** automatic ones for closing dates, follow-ups and interview prep, plus your own. They appear in the app and in a daily email digest.
 - **Your data:** download everything as a ZIP, or delete your account immediately.
+- **Try the demo:** one click creates a private account with a sample job search. No sign-up, no email, and it's deleted after 24 hours.
 
 ## Local setup
 
@@ -41,8 +42,9 @@ The end-to-end tests build the app, start it on port 3100 and reseed the demo us
 
 ## Before you launch
 
-- [ ] **Database:** hosted Postgres in a London region. Run `npx prisma migrate deploy` on deploy.
-- [ ] **Vercel environment variables:** `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL` (your domain, no trailing slash) and `CRON_SECRET`.
+- [ ] **Database:** hosted Postgres in a London region (e.g. Neon `eu-west-2`). Vercel's build runs `prisma migrate deploy` automatically (`vercel-build` script).
+- [ ] **Vercel environment variables (required):** `DATABASE_URL` (Neon's pooled string), `DIRECT_DATABASE_URL` (Neon's direct string, for migrations), `AUTH_SECRET`, `CRON_SECRET` and `APP_URL` (your address, no trailing slash). With just these, the site works through **Try the demo**.
+- [ ] **Optional, for real accounts:** `AUTH_GOOGLE_ID` + `AUTH_GOOGLE_SECRET` (Google sign-in), and `AUTH_RESEND_KEY` + `EMAIL_FROM` (email sign-in links and reminder emails). The login page only shows the methods that are configured.
 - [ ] **Google OAuth:** add `https://<your-domain>/api/auth/callback/google` as a redirect URI.
 - [ ] **Resend:** verify your sending domain and set `EMAIL_FROM` to an address on it. Until then, Resend only delivers to your own account's email address.
 - [ ] **Cron:** `vercel.json` runs the reminders job daily at 09:00 UTC, the most often the Hobby plan allows. On Pro you can make it hourly.

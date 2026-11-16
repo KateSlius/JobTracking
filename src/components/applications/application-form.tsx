@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
@@ -290,9 +290,9 @@ export function ApplicationForm({
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : mode === "create" ? "Add application" : "Save changes"}
         </Button>
-        <Button variant="outline" render={<Link href={cancelHref} />}>
+        <LinkButton variant="outline" href={cancelHref}>
           Cancel
-        </Button>
+        </LinkButton>
       </div>
     </form>
   );

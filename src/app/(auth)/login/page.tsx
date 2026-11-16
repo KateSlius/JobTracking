@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { signIn } from "@/lib/auth";
+import { signIn, signInMethods } from "@/lib/auth";
+import { DemoButton } from "@/components/marketing/demo-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,36 +45,58 @@ async function SignInError({
   );
 }
 
+function Or() {
+  return (
+    <div className="text-muted-foreground flex items-center gap-3 text-xs">
+      <Separator className="flex-1" />
+      or
+      <Separator className="flex-1" />
+    </div>
+  );
+}
+
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
+  // Only offer what this deployment can do: no email form without Resend, no Google button
+  // without OAuth credentials. The demo always works.
+  const { email, google } = signInMethods;
+  const description =
+    email && google
+      ? "We'll email you a link, or you can use Google."
+      : email
+        ? "We'll email you a sign-in link."
+        : google
+          ? "Sign in with your Google account."
+          : "Account sign-in isn't set up on this site yet. Try the demo instead.";
+
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Sign in</CardTitle>
-          <CardDescription>We&apos;ll email you a link, or you can use Google.</CardDescription>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Suspense>
             <SignInError searchParams={searchParams} />
           </Suspense>
 
-          <form action={signInWithEmail} className="flex flex-col gap-3">
-            <Label htmlFor="email">Email address</Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required />
-            <Button type="submit">Email me a sign-in link</Button>
-          </form>
-
-          <div className="text-muted-foreground flex items-center gap-3 text-xs">
-            <Separator className="flex-1" />
-            or
-            <Separator className="flex-1" />
-          </div>
-
-          <form action={signInWithGoogle}>
-            <Button type="submit" variant="outline" className="w-full">
-              Continue with Google
-            </Button>
-          </form>
+          {email && (
+            <form action={signInWithEmail} className="flex flex-col gap-3">
+              <Label htmlFor="email">Email address</Label>
+              <Input id="email" name="email" type="email" autoComplete="email" required />
+              <Button type="submit">Email me a sign-in link</Button>
+            </form>
+          )}
+          {email && google && <Or />}
+          {google && (
+            <form action={signInWithGoogle}>
+              <Button type="submit" variant="outline" className="w-full">
+                Continue with Google
+              </Button>
+            </form>
+          )}
+          {(email || google) && <Or />}
+          <DemoButton size="default" className="w-full" />
           <p className="text-muted-foreground text-center text-xs">
             By continuing you agree to the{" "}
             <Link href="/terms" className="underline underline-offset-4">

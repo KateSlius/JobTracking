@@ -22,6 +22,8 @@ model User {
   image                 String?
   timezone              String    @default("Europe/London")
   emailRemindersEnabled Boolean   @default(true)
+  /// "Try the demo" accounts: no email, deleted by the daily job after 24 hours.
+  isDemo                Boolean   @default(false)
   createdAt             DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
 
@@ -33,6 +35,8 @@ model User {
   reminders        Reminder[]
   documentVersions DocumentVersion[]
   notifications    Notification[]
+
+  @@index([isDemo, createdAt])
 }
 
 // Auth.js adapter models: https://authjs.dev/getting-started/adapters/prisma

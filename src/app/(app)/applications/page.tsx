@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { ApplicationsTable } from "@/components/applications/applications-table";
 import { FiltersBar } from "@/components/applications/filters-bar";
 import { KanbanBoard } from "@/components/applications/kanban-board";
@@ -70,9 +69,9 @@ function EmptyState({ filtered }: { filtered: boolean }) {
       <p className="text-muted-foreground max-w-sm text-sm">
         Add a job you&apos;ve applied for, or one you want to save for later.
       </p>
-      <Button render={<Link href="/applications/new" />}>
+      <LinkButton href="/applications/new">
         <Plus /> Add your first application
-      </Button>
+      </LinkButton>
     </div>
   );
 }
@@ -92,9 +91,9 @@ export default function ApplicationsPage({ searchParams }: PageProps<"/applicati
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">My applications</h1>
-        <Button render={<Link href="/applications/new" />}>
+        <LinkButton href="/applications/new">
           <Plus /> Add application
-        </Button>
+        </LinkButton>
       </div>
       <Suspense fallback={<div className="h-20" />}>
         <FiltersBar />
