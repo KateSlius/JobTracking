@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { DemoButton } from "@/components/marketing/demo-button";
+import { LinkButton } from "@/components/ui/link-button";
 
 export default function LandingPage() {
   return (
@@ -12,9 +12,16 @@ export default function LandingPage() {
         Track roles from LinkedIn, Indeed, Reed and agencies. See your pipeline at a glance, never
         miss a closing date, and add interviews straight to your calendar.
       </p>
-      <Button size="lg" render={<Link href="/login" />}>
-        Get started
-      </Button>
+      <div className="flex flex-wrap items-start gap-3">
+        <DemoButton variant="default" />
+        <LinkButton size="lg" variant="outline" href="/login">
+          Sign in
+        </LinkButton>
+      </div>
+      <p className="text-muted-foreground text-sm">
+        The demo gives you a private account with a sample job search, so you can try everything
+        straight away. No sign-up needed; it&apos;s deleted after 24 hours.
+      </p>
     </main>
   );
 }

@@ -109,7 +109,8 @@ test.describe("reminders, notifications and email", () => {
     const dueAfterSnooze = async () =>
       (
         await db.query<{ dueAt: Date }>(
-          `select "dueAt" from "Reminder" where kind='FOLLOW_UP' and title like '%Skyscanner%'`,
+          `select r."dueAt" from "Reminder" r join "User" u on u.id = r."userId"
+           where u.email = 'demo@example.com' and r.kind = 'FOLLOW_UP' and r.title like '%Skyscanner%'`,
         )
       )[0].dueAt.toISOString();
     const snoozed = await dueAfterSnooze();
@@ -131,8 +132,9 @@ test.describe("reminders, notifications and email", () => {
     }
     expect(await dueAfterSnooze()).toBe(snoozed);
     const [{ n }] = await db.query<{ n: number }>(
-      `select count(*)::int n from "Reminder" where kind='CLOSING_DATE' and title like '%HMRC%'
-       and "dismissedAt" is null and "completedAt" is null`,
+      `select count(*)::int n from "Reminder" r join "User" u on u.id = r."userId"
+       where u.email = 'demo@example.com' and r.kind = 'CLOSING_DATE' and r.title like '%HMRC%'
+       and r."dismissedAt" is null and r."completedAt" is null`,
     );
     expect(n).toBe(0);
   });

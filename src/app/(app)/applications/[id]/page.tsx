@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AnchorButton, LinkButton } from "@/components/ui/link-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteApplicationButton } from "@/components/applications/delete-application-button";
 import { StatusBadge } from "@/components/applications/status-badge";
@@ -74,16 +74,18 @@ async function ApplicationView({ params }: { params: PageProps<"/applications/[i
         </div>
         <div className="flex gap-2">
           {app.jobUrl && (
-            <Button
+            <AnchorButton
               variant="outline"
-              render={<a href={app.jobUrl} target="_blank" rel="noopener noreferrer" />}
+              href={app.jobUrl}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <ExternalLink /> Job advert
-            </Button>
+            </AnchorButton>
           )}
-          <Button variant="outline" render={<Link href={`/applications/${app.id}/edit`} />}>
+          <LinkButton variant="outline" href={`/applications/${app.id}/edit`}>
             <Pencil /> Edit
-          </Button>
+          </LinkButton>
           <DeleteApplicationButton
             action={deleteApplicationAction.bind(null, app.id)}
             label={label}

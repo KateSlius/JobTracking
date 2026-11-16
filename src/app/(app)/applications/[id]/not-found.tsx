@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 
 export default function ApplicationNotFound() {
   return (
@@ -8,9 +7,9 @@ export default function ApplicationNotFound() {
       <p className="text-muted-foreground text-sm">
         It may have been deleted, or it belongs to a different account.
       </p>
-      <Button variant="outline" render={<Link href="/applications" />}>
+      <LinkButton variant="outline" href="/applications">
         Back to your applications
-      </Button>
+      </LinkButton>
     </div>
   );
 }

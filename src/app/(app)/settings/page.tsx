@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Settings" };
 const PROVIDER_LABEL: Record<string, string> = { google: "Google", resend: "Email link" };
 
 async function SettingsContent() {
-  const { profile, documents } = await getSettings();
+  const { profile, documents, isDemo } = await getSettings();
   const methods = [
     ...new Set(profile.accounts.map((a) => PROVIDER_LABEL[a.provider] ?? a.provider)),
   ];
@@ -42,7 +42,7 @@ async function SettingsContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <EmailToggle enabled={profile.emailRemindersEnabled} />
+          <EmailToggle enabled={profile.emailRemindersEnabled} demo={isDemo} />
         </CardContent>
       </Card>
       <Card>

@@ -26,5 +26,5 @@ export async function getSettings() {
       },
     }),
   ]);
-  return { profile, documents };
+  return { profile, documents, isDemo: user.isDemo };
 }

@@ -5,7 +5,7 @@ import { setEmailRemindersAction } from "@/server/actions/reminders";
 import { cn } from "@/lib/utils";
 
 /** An accessible switch for "email me my reminders". */
-export function EmailToggle({ enabled }: { enabled: boolean }) {
+export function EmailToggle({ enabled, demo = false }: { enabled: boolean; demo?: boolean }) {
   const [optimistic, setOptimistic] = useOptimistic(enabled);
   const [, startTransition] = useTransition();
   return (
@@ -15,6 +15,7 @@ export function EmailToggle({ enabled }: { enabled: boolean }) {
         role="switch"
         aria-checked={optimistic}
         aria-labelledby="email-toggle-label"
+        disabled={demo}
         onClick={() =>
           startTransition(async () => {
             setOptimistic(!optimistic);
@@ -22,7 +23,7 @@ export function EmailToggle({ enabled }: { enabled: boolean }) {
           })
         }
         className={cn(
-          "focus-visible:ring-ring relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors outline-none focus-visible:ring-2",
+          "focus-visible:ring-ring relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
           optimistic ? "bg-primary" : "bg-input",
         )}
       >
@@ -37,7 +38,9 @@ export function EmailToggle({ enabled }: { enabled: boolean }) {
       <span id="email-toggle-label" className="text-sm">
         Email me when reminders are due
         <span className="text-muted-foreground block text-xs">
-          One email per day at most, listing everything due.
+          {demo
+            ? "Not available on demo accounts: they have no real email address."
+            : "One email per day at most, listing everything due."}
         </span>
       </span>
     </div>
