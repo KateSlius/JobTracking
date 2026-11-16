@@ -20,6 +20,10 @@ test.describe("dashboard", () => {
     await expect(tile("Active applications")).toContainText("6");
     await expect(tile("Active applications")).toContainText("3 saved to apply for");
     await expect(tile("Applied this week")).toContainText(/\d+ last week/);
+    // The sample data always includes an application from today, so this is never 0.
+    // StatTile renders label, value and detail as three <p>s; the second is the number.
+    const thisWeek = Number(await tile("Applied this week").locator("p").nth(1).innerText());
+    expect(thisWeek).toBeGreaterThanOrEqual(1);
 
     const rows = page.locator("ol li");
     await expect(rows.nth(0)).toContainText("Applied");

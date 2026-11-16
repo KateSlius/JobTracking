@@ -229,7 +229,8 @@ export const SAMPLE_APPLICATIONS: SeedApp[] = [
     company: "Arm",
     role: "Software Engineer, Developer Tools",
     path: ["APPLIED"],
-    startedDaysAgo: 4,
+    // Applied today, so "Applied this week" is never 0 on the dashboard (e.g. on a Monday).
+    startedDaysAgo: 0,
     data: {
       source: "REED",
       locationType: "ONSITE",
